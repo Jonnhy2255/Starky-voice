@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Effet d'Onde Sonore</title>
-    <link rel="manifest" href="/manifest.json"> <!-- Lien vers le manifeste -->
+    <link rel="manifest" href="/Starky-voice/manifest.json"> <!-- Lien vers le manifeste -->
     <style>
         * {
             margin: 0;
@@ -282,7 +282,7 @@
         // Enregistrement du Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('/Starky-voice/sw.js')
                     .then((registration) => {
                         console.log('Service Worker enregistré avec succès:', registration);
                     })

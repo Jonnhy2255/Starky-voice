@@ -3,294 +3,917 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Effet d'Onde Sonore</title>
-    <link rel="manifest" href="/Starky-voice/manifest.json"> <!-- Lien vers le manifeste -->
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #1a1a1a; /* Thème sombre par défaut */
-            overflow: hidden;
-            transition: background-color 0.5s ease;
-        }
-        body.light-theme {
-            background-color: #f0f0f0; /* Fond clair pour le thème clair */
-        }
-        .container {
-            position: relative;
-            display: flex;
-            align-items: center;
-            transform: translate(-6px, -50px);
-        }
-        .boule {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #2a2a2a, #4b0082, #8b0000, #000);
-            background-size: 200% 200%;
-            animation: rotation 5s linear infinite, degrade 6s ease infinite alternate;
-            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
-            transition: background 0.5s ease, box-shadow 0.5s ease;
-        }
-        .light-theme .boule {
-            background: linear-gradient(135deg, #e0e0e0, #9370db, #ff7f50, #fff);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-        .wave-container {
-            display: flex;
-            gap: 5px;
-            position: absolute;
-            width: 60px;
-            height: 40px;
-            align-items: center;
-        }
-        .wave {
-            width: 5px;
-            height: 100%;
-            background: linear-gradient(180deg, #4b0082, #8b0000);
-            border-radius: 5px;
-            animation: sound-wave 1s infinite ease-in-out;
-            transition: background 0.5s ease;
-        }
-        .light-theme .wave {
-            background: linear-gradient(180deg, #9370db, #ff7f50);
-        }
-        .wave-container.left {
-            left: -80px;
-        }
-        .wave-container.right {
-            right: -95px;
-        }
-        @keyframes rotation {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        @keyframes degrade {
-            0% { background-position: 0% 50%; }
-            100% { background-position: 100% 50%; }
-        }
-        @keyframes sound-wave {
-            0%, 100% { transform: scaleY(1); }
-            50% { transform: scaleY(1.5); }
-        }
-        .wave:nth-child(1) { animation-delay: 0s; }
-        .wave:nth-child(2) { animation-delay: 0.2s; }
-        .wave:nth-child(3) { animation-delay: 0.4s; }
-        .wave:nth-child(4) { animation-delay: 0.6s; }
-        .wave:nth-child(5) { animation-delay: 0.8s; }
-        .action-button {
-            position: fixed;
-            bottom: 20px;
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #4b0082, #8b0000);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
-            cursor: pointer;
-            border: none;
-            transition: background 0.5s ease, box-shadow 0.5s ease;
-        }
-        .light-theme .action-button {
-            background: linear-gradient(135deg, #9370db, #ff7f50);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-        .action-button i {
-            color: white;
-            font-size: 24px;
-        }
-        .microphone-button {
-            right: 20px;
-        }
-        .camera-button {
-            left: 20px;
-        }
-        .stop-icon {
-            width: 18px;
-            height: 18px;
-            background-color: white;
-        }
-        @keyframes parler {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-        .boule.parler {
-            animation: parler 0.5s infinite ease-in-out;
-        }
-    </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-</head>
-<body>
-    <div class="container">
-        <div class="wave-container left">
-            <div class="wave"></div>
-            <div class="wave"></div>
-            <div class="wave"></div>
-            <div class="wave"></div>
-            <div class="wave"></div>
-        </div>
-        <div class="boule"></div>
-        <div class="wave-container right">
-            <div class="wave"></div>
-            <div class="wave"></div>
-            <div class="wave"></div>
-            <div class="wave"></div>
-            <div class="wave"></div>
-        </div>
-    </div>
-    <div id="micButton" class="action-button microphone-button">
-        <i class="fas fa-microphone"></i>
-    </div>
-    <div id="cameraButton" class="action-button camera-button">
-        <i class="fas fa-video"></i>
-    </div>
+    <title>Application de Chat Vocal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        const micButton = document.getElementById("micButton");
-        const micIcon = micButton.querySelector("i");
-        const boule = document.querySelector(".boule");
-        const cameraButton = document.getElementById("cameraButton");
-        const body = document.body;
-        let stopIcon = null;
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = "fr-FR";
-        recognition.interimResults = false;
-        recognition.continuous = true;
-        let isListening = false;
-        let recordedText = "";
-
-        // Vérifier le thème sauvegardé
-        const savedTheme = localStorage.getItem("theme");
-        if (savedTheme === "light") {
-            body.classList.add("light-theme");
-        }
-
-        // Bouton caméra : affiche un message
-        cameraButton.addEventListener("click", () => {
-            alert("Fonction pas encore disponible");
-        });
-
-        // Gestion de la reconnaissance vocale
-        micButton.addEventListener("click", () => {
-            if (!isListening) {
-                startListening();
-            } else {
-                stopListening();
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                    },
+                }
             }
-        });
-
-        function startListening() {
-            isListening = true;
-            recognition.start();
-            micIcon.style.display = "none";
-            stopIcon = document.createElement("div");
-            stopIcon.classList.add("stop-icon");
-            micButton.appendChild(stopIcon);
-            recordedText = ""; // Réinitialiser le texte enregistré
-        }
-
-        function stopListening() {
-            isListening = false;
-            recognition.stop();
-            if (stopIcon) {
-                micButton.removeChild(stopIcon);
-                stopIcon = null;
-            }
-            micIcon.style.display = "block";
-            if (recordedText) {
-                processSpeech(recordedText);
-            }
-        }
-
-        recognition.onresult = (event) => {
-            const transcript = event.results[event.results.length - 1][0].transcript;
-            console.log("Texte reconnu :", transcript);
-            recordedText = transcript;
-        };
-
-        recognition.onend = () => {
-            if (isListening) {
-                recognition.start();
-            }
-        };
-
-        // Traitement de la parole
-        function processSpeech(text) {
-            text = text.toLowerCase().trim();
-
-            // Répondre aux salutations
-            if (text.includes("bonjour") || text.includes("salut")) {
-                simulateParler("Bonjour ! Comment puis-je vous aider ?");
-            }
-            // Changer le thème
-            else if (text.includes("change le thème")) {
-                toggleTheme();
-            }
-            // Réponse par défaut
-            else {
-                simulateParler("Je n'ai pas compris. Pouvez-vous répéter ?");
-            }
-        }
-
-        // Basculer entre les thèmes
-        function toggleTheme() {
-            body.classList.toggle("light-theme");
-            const isLightTheme = body.classList.contains("light-theme");
-            localStorage.setItem("theme", isLightTheme ? "light" : "dark");
-            simulateParler(isLightTheme ? "Thème clair activé" : "Thème sombre activé");
-        }
-
-        // Faire parler l'IA
-        function simulateParler(text) {
-            // Annuler toute synthèse vocale en cours
-            if (window.speechSynthesis.speaking) {
-                window.speechSynthesis.cancel();
-            }
-
-            boule.classList.add("parler");
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = "fr-FR";
-            utterance.onstart = () => {
-                console.log("L'IA commence à parler");
-                recordedText = ""; // Effacer le texte enregistré
-            };
-            utterance.onend = () => {
-                console.log("L'IA a fini de parler");
-                boule.classList.remove("parler");
-            };
-            utterance.onerror = (event) => {
-                console.error("Erreur de synthèse vocale :", event.error);
-                boule.classList.remove("parler");
-            };
-
-            // Vérifier que la synthèse vocale est prête
-            if (window.speechSynthesis.paused || window.speechSynthesis.speaking) {
-                window.speechSynthesis.cancel(); // Annuler et réessayer
-            }
-            window.speechSynthesis.speak(utterance);
         }
     </script>
+    <style>
+        /* === STYLES === */
+        body {
+            touch-action: manipulation;
+            overflow: hidden;
+        }
+        
+        .audio-visualizer {
+            position: relative;
+            height: 220px;
+            overflow: hidden;
+            background-color: #000;
+            border-radius: 16px;
+        }
+        
+        .visualizer-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        canvas.waveform {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+        }
+        
+        .glow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(
+                ellipse at center, 
+                rgba(66, 153, 225, 0), 
+                rgba(66, 153, 225, 0) 40%, 
+                rgba(66, 153, 225, 0) 60%, 
+                transparent 80%
+            );
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+            filter: blur(8px);
+        }
+        
+        .active .glow {
+            background: radial-gradient(
+                ellipse at center, 
+                rgba(66, 153, 225, 0.3), 
+                rgba(139, 92, 246, 0.2) 40%, 
+                rgba(59, 130, 246, 0.1) 60%, 
+                transparent 80%
+            );
+            opacity: 1;
+        }
+        
+        @keyframes gentleColorshift {
+            0% {
+                filter: hue-rotate(0deg) brightness(1);
+            }
+            50% {
+                filter: hue-rotate(30deg) brightness(1.1);
+            }
+            100% {
+                filter: hue-rotate(0deg) brightness(1);
+            }
+        }
+        
+        .mic-gradient {
+            background: linear-gradient(135deg, #4F46E5, #7C3AED);
+            transition: all 0.5s ease;
+        }
+        
+        .mic-gradient:hover {
+            background: linear-gradient(135deg, #4338CA, #6D28D9);
+        }
+        
+        .mic-listening {
+            background: linear-gradient(135deg, #EF4444, #F97316);
+        }
+        
+        .status-text {
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .transcription {
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .dark {
+            color-scheme: dark;
+        }
+        
+        /* Chat interface styles */
+        .chat-container {
+            display: none;
+            height: 100%;
+            width: 100%;
+        }
+        
+        .chat-messages {
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+        }
+        
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .chat-messages::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.5);
+            border-radius: 20px;
+        }
+        
+        .message {
+            max-width: 85%;
+            margin-bottom: 10px;
+            padding: 12px 16px;
+            border-radius: 18px;
+        }
+        
+        .user-message {
+            background-color: #5D5CDE;
+            color: white;
+            border-top-right-radius: 4px;
+            align-self: flex-end;
+        }
+        
+        .system-message {
+            background-color: #F3F4F6;
+            color: #374151;
+            border-top-left-radius: 4px;
+            align-self: flex-start;
+        }
+        
+        .dark .system-message {
+            background-color: #374151;
+            color: #F3F4F6;
+        }
+
+        /* Enhanced chat input styles */
+        .chat-input-container {
+            background-color: #F3F4F6;
+            border-radius: 28px;
+            padding: 8px 8px 8px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            margin: 0 4px;
+            border: 2px solid transparent;
+        }
+        
+        .dark .chat-input-container {
+            background-color: #374151;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .chat-input-container:focus-within {
+            border-color: #5D5CDE;
+            box-shadow: 0 2px 15px rgba(93, 92, 222, 0.15);
+        }
+        
+        .chat-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            color: #374151;
+            padding: 8px 0;
+        }
+        
+        .dark .chat-input {
+            color: #F3F4F6;
+        }
+        
+        .chat-send-button {
+            background: linear-gradient(135deg, #4F46E5, #7C3AED);
+            color: white;
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transform: scale(1);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .chat-send-button:hover {
+            transform: scale(1.05);
+            background: linear-gradient(135deg, #4338CA, #6D28D9);
+        }
+        
+        .chat-send-button:active {
+            transform: scale(0.95);
+        }
+        
+        .chat-send-button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(93, 92, 222, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(93, 92, 222, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(93, 92, 222, 0);
+            }
+        }
+
+        /* Animation classes */
+        .slide-in {
+            animation: slideIn 0.4s forwards cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .slide-out {
+            animation: slideOut 0.4s forwards cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(-100%); opacity: 0; }
+        }
+    </style>
+</head>
+
+<body class="dark:bg-black bg-white transition-colors duration-500">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="fixed top-0 inset-x-0 py-4 px-4 flex items-center justify-between dark:bg-black/80 bg-white/80 backdrop-blur-md z-20">
+            <div class="flex items-center">
+                <div class="relative mr-2 h-6 w-6">
+                    <div class="absolute inset-0 rounded-full bg-primary opacity-25"></div>
+                    <div class="relative rounded-full h-6 w-6 bg-primary flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                    </div>
+                </div>
+                <h1 class="text-xl font-bold dark:text-white text-black" id="app-title">Chat Vocal</h1>
+            </div>
+            
+            <button id="mode-toggle" class="h-10 w-10 bg-primary rounded-full flex items-center justify-center focus:outline-none shadow-md transform transition-all duration-300 ease-in-out active:scale-95 hover:bg-opacity-90">
+                <!-- Chat icon (shown in voice mode) -->
+                <svg id="chat-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                <!-- Mic icon (shown in chat mode) -->
+                <svg id="mic-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+            </button>
+        </header>
+
+        <!-- Voice interface -->
+        <main id="voice-interface" class="flex-1 pt-16 pb-32 flex flex-col">
+            <!-- Text display area -->
+            <div class="flex-1 flex flex-col items-center justify-center px-6">
+                <!-- Current status -->
+                <div id="status-text" class="text-xl font-medium dark:text-white text-black text-center mb-4 status-text">
+                    Maintenez pour parler
+                </div>
+                
+                <!-- Real-time transcription - displays what's being heard -->
+                <div id="transcription" class="text-2xl dark:text-gray-200 text-gray-800 text-center max-w-lg transcription mt-6 mb-6 min-h-[100px]"></div>
+            </div>
+
+            <!-- Audio Visualizer -->
+            <div class="mt-auto px-4">
+                <div id="audio-visualizer" class="audio-visualizer">
+                    <div class="visualizer-container">
+                        <canvas id="waveform" class="waveform"></canvas>
+                    </div>
+                    <div class="glow"></div>
+                </div>
+                
+                <!-- Control buttons -->
+                <div class="flex justify-center items-center mb-20 mt-8">
+                    <button id="mic-button" class="h-20 w-20 mic-gradient rounded-full flex items-center justify-center focus:outline-none shadow-lg transform transition-all duration-300 ease-in-out active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Chat interface -->
+        <main id="chat-interface" class="chat-container flex-1 pt-16 pb-6 flex flex-col">
+            <!-- Chat messages area -->
+            <div class="chat-messages flex-1 flex flex-col px-4 py-2 overflow-y-auto mb-2">
+                <div class="message system-message">
+                    Bienvenue dans le chat ! Comment puis-je vous aider ?
+                </div>
+                <!-- Messages will be added here dynamically -->
+            </div>
+            
+            <!-- Chat input area - positioned at bottom with space -->
+            <div class="px-4 pt-2 pb-8 shadow-md bg-white/90 dark:bg-black/90 backdrop-blur-sm sticky bottom-0 z-10 mt-auto">
+                <div id="chat-input-container" class="chat-input-container">
+                    <input 
+                        id="message-input" 
+                        class="chat-input dark:text-white" 
+                        placeholder="Écrivez votre message..." 
+                        type="text"
+                    />
+                    <button id="send-message" class="chat-send-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7-7l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
     <script>
-        // Enregistrement du Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/Starky-voice/sw.js')
-                    .then((registration) => {
-                        console.log('Service Worker enregistré avec succès:', registration);
-                    })
-                    .catch((error) => {
-                        console.log('Échec de l\'enregistrement du Service Worker:', error);
-                    });
+        // === CONFIGURATION ===
+        const config = {
+            visualization: {
+                normalWaveColor: '#4F46E5',       // Couleur normale
+                activeWaveColor: '#0EA5E9',       // Couleur active (quand on parle)
+                normalShadowColor: 'rgba(79, 70, 229, 0.3)', // Ombre normale
+                activeShadowColor: 'rgba(14, 165, 233, 0.7)', // Ombre active
+                normalShadowBlur: 5,             // Flou normal
+                activeShadowBlur: 20,            // Flou actif
+                normalLineWidth: 3,              // Épaisseur normale
+                activeLineWidth: 4,              // Épaisseur active
+                analyserFftSize: 1024,
+                smoothingTimeConstant: 0.85
+            },
+            messages: {
+                idle: "Maintenez pour parler",
+                listening: "Je vous écoute"
+            },
+            speechSynthesis: {
+                lang: 'fr-FR',
+                volume: 1,
+                rate: 1,
+                pitch: 1
+            },
+            wave: {
+                normalAmplitude: 20,           // Amplitude normale
+                activeAmplitude: 40,           // Amplitude active
+                frequency: 0.02,               // Fréquence de l'onde
+                speed: 0.03,                   // Vitesse de déplacement
+                points: 3                      // Nombre de points d'inflexion
+            }
+        };
+
+        // === INITIALISATIONS ===
+        
+        // Dark mode detection
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+        
+        // DOM elements
+        const elements = {
+            micButton: document.getElementById('mic-button'),
+            audioVisualizer: document.getElementById('audio-visualizer'),
+            waveform: document.getElementById('waveform'),
+            statusText: document.getElementById('status-text'),
+            transcription: document.getElementById('transcription'),
+            
+            // Mode toggle elements
+            modeToggle: document.getElementById('mode-toggle'),
+            chatIcon: document.getElementById('chat-icon'),
+            micIcon: document.getElementById('mic-icon'),
+            
+            // Interface elements
+            voiceInterface: document.getElementById('voice-interface'),
+            chatInterface: document.getElementById('chat-interface'),
+            
+            // Chat interface elements
+            messageInput: document.getElementById('message-input'),
+            sendMessage: document.getElementById('send-message'),
+            chatInputContainer: document.getElementById('chat-input-container'),
+            chatMessages: document.querySelector('.chat-messages'),
+            appTitle: document.getElementById('app-title')
+        };
+        
+        // State variables
+        const state = {
+            isListening: false,
+            isSpeaking: false,     // Détecte si l'utilisateur parle actuellement
+            volumeLevel: 0,        // Niveau de volume actuel (0-100)
+            recognition: null,
+            audioContext: null,
+            analyser: null,
+            microphone: null,
+            dataArray: null,
+            canvasContext: null,
+            animationFrame: null,
+            lastTranscript: '',    // Pour stocker la dernière transcription
+            phase: 0,              // Pour l'animation de la vague
+            
+            // Chat state
+            currentMode: 'voice',  // 'voice' or 'chat'
+            messages: []           // To store chat messages
+        };
+        
+        // === CANVAS SETUP ===
+        
+        // Configure canvas for waveform visualization
+        function setupCanvas() {
+            const canvas = elements.waveform;
+            const dpr = window.devicePixelRatio || 1;
+            
+            // Set canvas dimensions based on display size
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            
+            // Get canvas context and configure it
+            state.canvasContext = canvas.getContext('2d');
+            state.canvasContext.scale(dpr, dpr);
+            
+            // Set initial line style for waveform
+            state.canvasContext.lineWidth = config.visualization.normalLineWidth;
+            state.canvasContext.strokeStyle = config.visualization.normalWaveColor;
+            state.canvasContext.shadowColor = config.visualization.normalShadowColor;
+            state.canvasContext.shadowBlur = config.visualization.normalShadowBlur;
+            
+            // Add resize event listener to update canvas dimensions
+            window.addEventListener('resize', () => {
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                state.canvasContext.scale(dpr, dpr);
+                
+                // Rétablir les propriétés du contexte après le redimensionnement
+                updateWaveAppearance();
+            });
+            
+            // Start the wave animation even in idle state
+            startWaveformAnimation();
+        }
+        
+        // Mise à jour de l'apparence de l'onde en fonction de l'état
+        function updateWaveAppearance() {
+            // Si l'utilisateur est en train de parler, utiliser les propriétés actives
+            if (state.isSpeaking) {
+                state.canvasContext.lineWidth = config.visualization.activeLineWidth;
+                state.canvasContext.strokeStyle = config.visualization.activeWaveColor;
+                state.canvasContext.shadowColor = config.visualization.activeShadowColor;
+                state.canvasContext.shadowBlur = config.visualization.activeShadowBlur;
+            } else {
+                // Sinon utiliser les propriétés normales
+                state.canvasContext.lineWidth = config.visualization.normalLineWidth;
+                state.canvasContext.strokeStyle = config.visualization.normalWaveColor;
+                state.canvasContext.shadowColor = config.visualization.normalShadowColor;
+                state.canvasContext.shadowBlur = config.visualization.normalShadowBlur;
+            }
+        }
+        
+        // Draw smooth wave animation
+        function startWaveformAnimation() {
+            // Cancel any existing animation frame
+            if (state.animationFrame) {
+                cancelAnimationFrame(state.animationFrame);
+            }
+            
+            // Function to draw each frame of the wave
+            function drawWave() {
+                //.recognition.continuous = false; // Changed to false for push-to-talk
+            state.recognition.interimResults = true;
+            
+            // Event handlers
+            state.recognition.onstart = () => {
+                state.isListening = true;
+                updateListeningState(true);
+            };
+            
+            state.recognition.onresult = (event) => {
+                let finalTranscript = '';
+                let interimTranscript = '';
+                
+                // Collect results
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                        // Store the final transcript for speech synthesis
+                        state.lastTranscript = finalTranscript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                // Display complete text (both final and interim)
+                elements.transcription.textContent = finalTranscript + interimTranscript;
+            };
+            
+            state.recognition.onerror = (event) => {
+                console.error("Speech recognition error:", event.error);
+                if (event.error === 'no-speech') {
+                    // Just a notification, not a critical error
+                    console.log("No speech detected");
+                } else {
+                    stopListening();
+                }
+            };
+            
+            state.recognition.onend = () => {
+                // Only restart if still in listening mode (push-to-talk)
+                if (state.isListening) {
+                    try {
+                        state.recognition.start();
+                    } catch (e) {
+                        console.log("Could not restart recognition:", e);
+                        state.isListening = false;
+                        updateListeningState(false);
+                    }
+                }
+            };
+            
+            return true;
+        }
+        
+        // Set up audio analysis for visualization
+        async function setupAudioAnalysis() {
+            try {
+                // Check support
+                if (!('AudioContext' in window) && !('webkitAudioContext' in window)) {
+                    console.warn("Web Audio API is not supported in this browser");
+                    return false;
+                }
+                
+                // Create audio context if it doesn't exist
+                if (!state.audioContext) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    state.audioContext = new AudioContext();
+                }
+                
+                // Request microphone access
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                state.activeStream = stream;
+                
+                // Create and configure analyser
+                state.analyser = state.audioContext.createAnalyser();
+                state.analyser.fftSize = config.visualization.analyserFftSize;
+                state.analyser.smoothingTimeConstant = config.visualization.smoothingTimeConstant;
+                state.analyser.minDecibels = config.wave.minDB;
+                state.analyser.maxDecibels = config.wave.maxDB;
+                
+                // Connect microphone to analyzer
+                state.streamSource = state.audioContext.createMediaStreamSource(stream);
+                state.streamSource.connect(state.analyser);
+                
+                return true;
+            } catch (error) {
+                console.error("Error initializing audio analysis:", error);
+                return false;
+            }
+        }
+        
+        // Clean up audio analysis
+        function cleanupAudioAnalysis() {
+            if (state.streamSource) {
+                state.streamSource.disconnect();
+                state.streamSource = null;
+            }
+            
+            if (state.activeStream) {
+                state.activeStream.getTracks().forEach(track => track.stop());
+                state.activeStream = null;
+            }
+        }
+        
+        // === SPEECH SYNTHESIS ===
+        
+        // Function to speak the transcribed text
+        function speakText(text) {
+            // Check if speech synthesis is supported
+            if ('speechSynthesis' in window) {
+                // Create new speech utterance
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                // Configure speech synthesis
+                utterance.lang = config.speechSynthesis.lang;
+                utterance.volume = config.speechSynthesis.volume;
+                utterance.rate = config.speechSynthesis.rate;
+                utterance.pitch = config.speechSynthesis.pitch;
+                
+                // Speak the text
+                window.speechSynthesis.speak(utterance);
+                
+                return true;
+            } else {
+                console.warn("Speech synthesis is not supported in this browser");
+                return false;
+            }
+        }
+        
+        // === VOICE INPUT MANAGEMENT ===
+        
+        // Start voice listening
+        async function startListening() {
+            // Clear previous transcript
+            elements.transcription.textContent = "";
+            state.lastTranscript = "";
+            
+            // First-time initialization
+            if (!state.recognition) {
+                setupSpeechRecognition();
+            }
+            
+            // Setup audio analysis each time
+            const analysisReady = await setupAudioAnalysis();
+            if (!analysisReady) {
+                alert("Impossible d'initialiser l'analyse audio");
+                return;
+            }
+            
+            // Start voice recognition
+            try {
+                if (state.recognition) {
+                    state.recognition.start();
+                    drawActiveWave();
+                }
+            } catch (error) {
+                console.error("Error starting recognition:", error);
+            }
+        }
+        
+        // Stop voice listening
+        function stopListening() {
+            state.isListening = false;
+            
+            // Stop recognition if active
+            if (state.recognition) {
+                try {
+                    state.recognition.stop();
+                } catch (error) {
+                    console.log("Recognition was already stopped");
+                }
+            }
+            
+            // Clean up audio analysis
+            cleanupAudioAnalysis();
+            
+            // Update UI
+            updateListeningState(false);
+            
+            // Switch back to idle wave
+            drawIdleWave();
+            
+            // Speak the transcribed text if there's something to repeat
+            if (state.lastTranscript && state.lastTranscript.trim() !== '') {
+                // Add a small delay before speaking to make it feel more natural
+                setTimeout(() => {
+                    speakText(state.lastTranscript);
+                }, 300);
+                
+                // Add to chat as a message
+                addMessage(state.lastTranscript, true);
+                
+                // Add response message after speech synthesis completes
+                setTimeout(() => {
+                    addMessage(`J'ai entendu: "${state.lastTranscript}"`, false);
+                }, 800);
+            }
+        }
+        
+        // Update UI based on listening state
+        function updateListeningState(isListening) {
+            // Update status text
+            elements.statusText.textContent = isListening ? 
+                config.messages.listening : 
+                config.messages.idle;
+            
+            // Update visualizer
+            if (isListening) {
+                elements.audioVisualizer.classList.add('active');
+            } else {
+                elements.audioVisualizer.classList.remove('active');
+            }
+            
+            // Update button appearance
+            if (isListening) {
+                elements.micButton.classList.add("mic-listening");
+            } else {
+                elements.micButton.classList.remove("mic-listening");
+            }
+        }
+        
+        // === CHAT FUNCTIONS ===
+        
+        // Switch between voice and chat interfaces
+        function switchMode(mode) {
+            if (mode === state.currentMode) return;
+            
+            // Stop listening if switching from voice mode
+            if (state.currentMode === 'voice' && state.isListening) {
+                stopListening();
+            }
+            
+            // Update title and toggle button icons
+            if (mode === 'voice') {
+                elements.appTitle.textContent = 'Chat Vocal';
+                elements.chatIcon.classList.remove('hidden');
+                elements.micIcon.classList.add('hidden');
+                
+                // Slide out chat interface
+                elements.chatInterface.classList.add('slide-out');
+                
+                // Wait for animation to complete
+                setTimeout(() => {
+                    elements.chatInterface.style.display = 'none';
+                    elements.chatInterface.classList.remove('slide-out');
+                    
+                    // Show voice interface
+                    elements.voiceInterface.style.display = 'flex';
+                    elements.voiceInterface.classList.add('slide-in');
+                    
+                    setTimeout(() => {
+                        elements.voiceInterface.classList.remove('slide-in');
+                    }, 400);
+                }, 400);
+            } else {
+                elements.appTitle.textContent = 'Chat Écrit';
+                elements.chatIcon.classList.add('hidden');
+                elements.micIcon.classList.remove('hidden');
+                
+                // Slide out voice interface
+                elements.voiceInterface.classList.add('slide-out');
+                
+                // Wait for animation to complete
+                setTimeout(() => {
+                    elements.voiceInterface.style.display = 'none';
+                    elements.voiceInterface.classList.remove('slide-out');
+                    
+                    // Show chat interface
+                    elements.chatInterface.style.display = 'flex';
+                    elements.chatInterface.classList.add('slide-in');
+                    
+                    // Focus input
+                    elements.messageInput.focus();
+                    
+                    setTimeout(() => {
+                        elements.chatInterface.classList.remove('slide-in');
+                    }, 400);
+                }, 400);
+            }
+            
+            // Update current mode
+            state.currentMode = mode;
+        }
+        
+        // Add a new message to the chat
+        function addMessage(text, isUser = true) {
+            // Create message element
+            const messageEl = document.createElement('div');
+            messageEl.className = isUser ? 
+                'message user-message self-end' : 
+                'message system-message self-start';
+            messageEl.textContent = text;
+            
+            // Add to DOM
+            elements.chatMessages.appendChild(messageEl);
+            
+            // Store in state
+            state.messages.push({
+                text,
+                isUser
+            });
+            
+            // Scroll to bottom
+            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+        }
+        
+        // Handle sending a message
+        function sendMessage() {
+            const text = elements.messageInput.value.trim();
+            if (!text) return;
+            
+            // Add visual feedback - pulse animation
+            elements.chatInputContainer.classList.add('pulse-animation');
+            
+            // Add user message
+            addMessage(text, true);
+            
+            // Clear input
+            elements.messageInput.value = '';
+            
+            // Remove pulse animation after a short delay
+            setTimeout(() => {
+                elements.chatInputContainer.classList.remove('pulse-animation');
+            }, 300);
+            
+            // Add automatic response (in a real app, this would be an API call)
+            setTimeout(() => {
+                addMessage(`Je comprends votre message : "${text}"`, false);
+            }, 500);
+        }
+        
+        // === INITIALIZATION AND EVENT HANDLERS ===
+        
+        // Initialize the application
+        function initializeApp() {
+            // Initialize UI components
+            setupCanvas();
+            
+            // Push-to-talk events with mouse
+            elements.micButton.addEventListener('mousedown', startListening);
+            elements.micButton.addEventListener('mouseup', stopListening);
+            elements.micButton.addEventListener('mouseleave', stopListening);
+            
+            // Push-to-talk events with touch (for mobile)
+            elements.micButton.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Prevent mouse events from firing
+                startListening();
+            });
+            elements.micButton.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                stopListening();
+            });
+            elements.micButton.addEventListener('touchcancel', (e) => {
+                e.preventDefault();
+                stopListening();
+            });
+            
+            // Mode toggle button
+            elements.modeToggle.addEventListener('click', () => {
+                if (state.currentMode === 'voice') {
+                    switchMode('chat');
+                } else {
+                    switchMode('voice'); 
+                }
+            });
+            
+            // Send message button
+            elements.sendMessage.addEventListener('click', sendMessage);
+            
+            // Dynamic input effects
+            elements.messageInput.addEventListener('focus', () => {
+                elements.chatInputContainer.classList.add('shadow-lg');
+            });
+            
+            elements.messageInput.addEventListener('blur', () => {
+                elements.chatInputContainer.classList.remove('shadow-lg');
+            });
+            
+            // Send message on Enter key
+            elements.messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            // Add dynamic effect when typing
+            elements.messageInput.addEventListener('input', () => {
+                if (elements.messageInput.value.trim() !== '') {
+                    elements.sendMessage.classList.add('scale-110');
+                } else {
+                    elements.sendMessage.classList.remove('scale-110');
+                }
             });
         }
+        
+        // Start the application
+        initializeApp();
     </script>
 </body>
 </html>

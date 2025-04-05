@@ -1,4 +1,4 @@
-const CACHE_NAME = "Starky-v3";
+123dwfconst CACHE_NAME = "Starky-v3";
 const ASSETS = [
   "/Starky-voice/",
   "/Starky-voice/index.html",
